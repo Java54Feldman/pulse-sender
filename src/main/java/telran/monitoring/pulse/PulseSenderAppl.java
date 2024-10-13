@@ -63,12 +63,10 @@ public class PulseSenderAppl {
 		if (value == null) {
 			value = random.nextInt(MIN_PULSE_VALUE, MAX_PULSE_VALUE + 1);
 			previousPulseMap.put(patientId, value);
-		} else {
-			if (isJump()) {
-				value = computePulse(value);
-				previousPulseMap.put(patientId, value);
-			}
-		}
+		} else if(isJump()) {
+			value = computePulse(value);
+			previousPulseMap.put(patientId, value);
+		} 
 		return value;
 	}
 
