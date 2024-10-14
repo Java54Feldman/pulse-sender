@@ -14,14 +14,14 @@ public class PulseSenderAppl {
 	private static final int MAX_PULSE_VALUE = 200;
 	private static final String HOST = "localhost";
 	private static final int PORT = 5000;
-	private static final int JUMP_PROBABILITY = 15;
-	private static final int JUMP_POSITIVE_PROBABILITY = 70;
+	private static final int JUMP_PROB = 15;
+	private static final int JUMP_POSITIVE_PROB = 70;
 	private static final int MIN_JUMP_PERCENT = 10;
 	private static final int MAX_JUMP_PERCENT = 100;
 	private static final long PATIENT_ID_PRINTED_VALUES = 3;
 	private static Random random = new Random();
 	static DatagramSocket socket;
-	private static HashMap<Long, Integer> previousPulseMap = new HashMap<>();
+	private static HashMap<Long, Integer> patientIdPulseValue = new HashMap<>();
 
 	public static void main(String[] args) throws Exception {
 		socket = new DatagramSocket();
@@ -59,41 +59,35 @@ public class PulseSenderAppl {
 	}
 
 	private static int getRandomPulseValue(long patientId) {
-		Integer value = previousPulseMap.get(patientId);
-		if (value == null) {
-			value = random.nextInt(MIN_PULSE_VALUE, MAX_PULSE_VALUE + 1);
-			previousPulseMap.put(patientId, value);
-		} else if(isJump()) {
-			value = computePulse(value);
-			previousPulseMap.put(patientId, value);
-		} 
-		return value;
-	}
-
-	private static int computePulse(int value) {
-		int jumpSign = getJumpSign();
-		int jumpPersent = random.nextInt(MIN_JUMP_PERCENT, MAX_JUMP_PERCENT + 1);
-		value = value + jumpSign * value * jumpPersent / 100;
-		value = fixValueInRange(value);
-		return value;
-	}
-
-	private static int fixValueInRange(int value) {
-		if (value > MAX_PULSE_VALUE) {
-			value = MAX_PULSE_VALUE;
+		int valueRes = patientIdPulseValue.computeIfAbsent(patientId,
+				k -> random.nextInt(MIN_PULSE_VALUE, MAX_PULSE_VALUE + 1));
+		if (chance(JUMP_PROB)) {
+			valueRes = getValueWithJump(valueRes);
+			patientIdPulseValue.put(patientId, valueRes);
 		}
-		if (value < MIN_PULSE_VALUE) {
-			value = MIN_PULSE_VALUE;
+
+		return valueRes;
+	}
+
+
+	private static int getValueWithJump(int previousValue) {
+		int jumpPercent = random.nextInt(MIN_JUMP_PERCENT, MAX_JUMP_PERCENT + 1);
+		int jumpValue = previousValue * jumpPercent / 100;
+		if (!chance(JUMP_POSITIVE_PROB)) {
+			jumpValue = -jumpValue;
 		}
-		return value;
+		int res = previousValue + jumpValue;
+		if (res < MIN_PULSE_VALUE) {
+			res = MIN_PULSE_VALUE;
+		} else if (res > MAX_PULSE_VALUE) {
+			res = MAX_PULSE_VALUE;
+		}
+		return res;
 	}
 
-	private static int getJumpSign() {
-		return random.nextInt(100) < JUMP_POSITIVE_PROBABILITY ? 1 : -1;
-	}
+	private static boolean chance(int prob) {
 
-	private static boolean isJump() {
-		return random.nextInt(100) < JUMP_PROBABILITY;
+		return random.nextInt(0, 100) < prob;
 	}
 
 }
