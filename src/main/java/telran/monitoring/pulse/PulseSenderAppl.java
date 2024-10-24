@@ -7,13 +7,17 @@ import java.util.stream.IntStream;
 import telran.monitoring.pulse.dto.SensorData;
 
 public class PulseSenderAppl {
-	private static final int N_PACKETS = 100;
+	private static final int N_PACKETS = 50;
 	private static final long TIMEOUT = 50;
 	private static final int N_PATIENTS = 5;
 	private static final int MIN_PULSE_VALUE = 50;
 	private static final int MAX_PULSE_VALUE = 200;
+    private static final int MAX_ERROR_PULSE_VALUE = MAX_PULSE_VALUE + 10;
+    private static final int MIN_ERROR_PULSE_VALUE = MIN_PULSE_VALUE - 10;
+    private static final int MAX_ERROR_PULSE_PROB = 5;
+    private static final int MIN_ERROR_PULSE_PROB = 3;
 	private static final String HOST = "localhost";
-	private static final int PORT = 5000;
+    private static final int PORT = 5000;
 	private static final int JUMP_PROB = 15;
 	private static final int JUMP_POSITIVE_PROB = 70;
 	private static final int MIN_JUMP_PERCENT = 10;
@@ -61,11 +65,15 @@ public class PulseSenderAppl {
 	private static int getRandomPulseValue(long patientId) {
 		int valueRes = patientIdPulseValue.computeIfAbsent(patientId,
 				k -> random.nextInt(MIN_PULSE_VALUE, MAX_PULSE_VALUE + 1));
-		if (chance(JUMP_PROB)) {
+		
+		if (chance(MAX_ERROR_PULSE_PROB)) {
+            valueRes = random.nextInt(MAX_ERROR_PULSE_VALUE + 1, MAX_ERROR_PULSE_VALUE + 30);
+        } else if (chance(MIN_ERROR_PULSE_PROB)) {
+            valueRes = random.nextInt(0, MIN_ERROR_PULSE_VALUE);
+        } else if (chance(JUMP_PROB)) {
 			valueRes = getValueWithJump(valueRes);
 			patientIdPulseValue.put(patientId, valueRes);
 		}
-
 		return valueRes;
 	}
 
